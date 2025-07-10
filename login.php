@@ -1,48 +1,36 @@
 <?php
-include 'db.php';
-session_start();
-$msg = '';
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "user_auth";
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $_POST['email'];
-    $pass = $_POST['password'];
+// Connect to MySQL
+$conn = new mysqli($servername, $username, $password, $database);
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-
-    $result = $stmt->get_result();
-    if ($result->num_rows == 1) {
-        $user = $result->fetch_assoc();
-        if (password_verify($pass, $user['password'])) {
-            $_SESSION['user'] = $user;
-            header("Location: dashboard.php");
-            exit;
-        } else {
-            $msg = "Invalid password.";
-        }
-    } else {
-        $msg = "User not found.";
-    }
+if ($conn->connect_error) {
+  die("Connection failed: " . $conn->connect_error);
 }
-?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="form-container">
-    <h2>Login</h2>
-    <form method="POST">
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
-    </form>
-    <p class="msg"><?= $msg ?></p>
-    <p>Don't have an account? <a href="signup.php">Signup</a></p>
-</div>
-</body>
-</html>
+$user = $_POST['username'];
+$pass = $_POST['password'];
+
+// Get user from DB
+$sql = "SELECT * FROM users WHERE username = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $user);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 1) {
+  $row = $result->fetch_assoc();
+  if (password_verify($pass, $row['password'])) {
+    echo "Login successful. Welcome, " . htmlspecialchars($user) . "!";
+  } else {
+    echo "Incorrect password.";
+  }
+} else {
+  echo "User not found.";
+}
+
+$conn->close();
+?>
